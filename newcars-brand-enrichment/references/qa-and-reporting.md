@@ -1,8 +1,8 @@
 # QA on staging and issue reporting
 
 We are content agents: we upload content and **report** frontend/backend problems. We never edit the
-frontend/backend code (`/Users/joe/new_cars/app` is outdated and owned by other teams — don't cite its source
-lines as proof of deployed behaviour).
+frontend/backend code — other teams own it, and any local checkout is likely outdated, so don't cite its
+source lines as proof of deployed behaviour. Reproduce in the browser instead.
 
 ## 1. API read-back
 `scripts/verify_staging.py --workdir <dir>` → `verify.md`. Fix every data failure (re-run
@@ -27,7 +27,7 @@ For every problem:
    Confirm the control has the data in the API first — a control without the data proves nothing.
 3. Same wrong behaviour on the control → frontend issue, report it. Correct on the control → look at our data again.
 
-Known frontend issues after the 2026-09-24 retest (reports in `/Users/joe/newcars code/reports/`):
+Known frontend issues after the 2026-09-24 retest (full reports in this skill's `reports/`):
 **still open** — brand editorial (heritage/innovation/sustainability) stays English in AR mode; brand `story_*`
 is never rendered; highlight slot labels are wrong/untranslated (the comfort card reads "Performance");
 equipment names render in English in AR although `name_ar` exists; the AR specifications section corrupts the
@@ -36,7 +36,7 @@ engine string ("4 أسطواناتinder"); the "Performance" equipment category 
 imported highlight cards render, branches show, `?trim=` works, brand pages list models, language persists.
 Re-check before reporting; only add NEW findings to a new report.
 
-## 4. Report format (save to `/Users/joe/newcars code/reports/YYYY-MM-DD-<topic>.md`)
+## 4. Report format (save to `./reports/YYYY-MM-DD-<topic>.md`, relative to your working directory)
 ```markdown
 # <Frontend|Backend> issues — <scope>
 **Reported by:** content team · **Date validated:** · **Environment:** staging URLs + API base

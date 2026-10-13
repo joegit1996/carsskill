@@ -9,9 +9,10 @@ Turns "enrich <brand>" into a complete, verified, bilingual brand on staging wit
 The judgment-heavy work (research, choosing images, writing EN/AR copy) is yours; the repeatable work is done
 by the bundled scripts, which all read one file: `<workdir>/content.json`.
 
-**Our role:** content agents. We upload content and *report* frontend/backend issues — we never modify code
-in `/Users/joe/new_cars` (it's outdated and owned by others). All files we create go under
-`/Users/joe/newcars code/` — never into `/Users/joe/new_cars`.
+**Our role:** content agents. We upload content and *report* frontend/backend issues — we never modify the
+storefront or catalog-service code (other teams own it, and any checkout we can see is outdated). Everything we
+create stays inside the directory we are run from: one workdir per brand, plus `reports/`. Never write into the
+application's own repository.
 
 Scripts live in `scripts/` next to this file (call them with `python3 <skill-dir>/scripts/<name>.py`).
 
@@ -19,28 +20,33 @@ Scripts live in `scripts/` next to this file (call them with `python3 <skill-dir
 - **Python 3** (stdlib only for the API scripts). `media_screen.py` needs **Pillow**; video work needs **ffmpeg/ffprobe**;
   brochures need **poppler** (`pdftotext`, `pdftoppm`, `pdfimages`, `pdfinfo`).
 - **Credentials** for the staging admin console: `scripts/get_jwt.py --workdir <dir> --user … --password …`, or
-  env `NEWCARS_ADMIN_USER` / `NEWCARS_ADMIN_PASS`. The staging pair is documented in the project's
-  `docs/uploader-guide.md`.
-- **Reference docs this skill cites** (paths as on the original machine; point to your copy if they differ):
-  `/Users/joe/new_cars/docs/swaggerv2.json` (API contract — always check it), `docs/uploader-guide.md`,
-  `docs/content-upload-guide.md`, and the brand-import checklist. Everything the scripts need at runtime is in
-  this skill; those docs are for cross-checking.
-- **Where files go:** one workdir per brand (`<brand_code>/`) holding `sources/`, `media/`, `content.json`,
-  `payloads/`. Nothing is written outside it except reports.
+  env `NEWCARS_ADMIN_USER` / `NEWCARS_ADMIN_PASS`. The staging pair is documented in the project's uploader
+  guide (`$NEWCARS_DOCS/uploader-guide.md`, Step 1) — ask the user for it if you don't have the docs.
+- **Reference docs** (optional — the skill is self-contained at runtime, the docs are for cross-checking).
+  Point to wherever the project keeps them with **env vars**, never a hard-coded path:
+  `NEWCARS_DOCS=/path/to/docs` (holding `swaggerv2.json`, `uploader-guide.md`, `content-upload-guide.md` and the
+  brand-import checklist) or `NEWCARS_SWAGGER=/path/to/swaggerv2.json` on its own.
+  `scripts/api_contract.py` resolves the swagger through those vars, then `./swaggerv2.json` and
+  `./docs/swaggerv2.json`, and prints how to set them if it finds nothing. No swagger on this machine → ask the
+  user or the service owners for a copy; don't guess at endpoints.
+- **Where files go:** everything is **relative to the directory you are run from** — one workdir per brand
+  (`./<brand_code>/` with `sources/`, `media/`, `content.json`, `payloads/`) plus `./reports/`. Nothing is
+  written outside those.
 - Some shells block `sleep`; the scripts use Python timers instead. `curl` may need `--http1.1` for dealer sites.
 
 ## Before you start (ask once, then run end-to-end)
 1. **Code mode — ask the user:** `test` (codes prefixed `kw-`, e.g. `kw-changan`, `kw-changan-cs75-plus`) or
    `real` (production codes). Record it in `run.code_mode`. Display names never carry the prefix.
 2. Scope: whole brand, or specific models? (Default: every model on the Kuwait lineup.)
-3. Workdir: `/Users/joe/newcars code/<brand_code>/` with `sources/`, `media/`, `payloads/`.
+3. Workdir: `./<brand_code>/` (relative to where you're run) with `sources/`, `media/`, `payloads/`.
 4. Check staging for this make under ANY code (`/v1/public/brands`), not just yours. Imports are full-record
    upserts — if your code exists you will overwrite it; in `test` mode that's fine for our own `kw-` data,
    anything else needs the user's OK. Note (don't fix) anything wrong in the existing records for the report.
    Also check `references/brand-notes.md` for this brand — it may already tell you where the data lives.
 5. Read `references/api-and-gotchas.md` once; get a token: `scripts/get_jwt.py --workdir <dir>`. **Check the
-   swagger (`/Users/joe/new_cars/docs/swaggerv2.json`) before using or ruling out any endpoint** — it settles
-   what can be written and with which fields, and it is faster than guessing.
+   API contract before using or ruling out any endpoint** — `scripts/api_contract.py paths trims`,
+   `… body /v1/admin/import/trims post`, `… writes` (swagger location via `NEWCARS_SWAGGER`/`NEWCARS_DOCS`,
+   see Setup). It settles what can be written and with which fields, and it is faster than guessing.
 
 After these answers, the run is **fully automatic through import and QA** — don't pause for approval unless
 something needs a decision only the user can make (e.g. overwriting non-kw data, a source conflict you
@@ -120,7 +126,7 @@ python3 scripts/verify_staging.py --workdir <dir>
 ```
 Then visual QA in the browser (EN and AR) per `references/qa-and-reporting.md`. For anything wrong: check the
 API first; if the API is right, reproduce on an established control brand before calling it a frontend issue.
-New issues go into a report in `/Users/joe/newcars code/reports/` (format in the reference). Known issues are
+New issues go into a report in `./reports/` (format in the reference). Known issues are
 listed there too — don't re-report them as new.
 
 ### 8. Tell the user

@@ -23,6 +23,23 @@ Copy `newcars-brand-enrichment/` into your skills directory (e.g. `.claude/skill
 user-level skills folder) and invoke it by name. `SKILL.md` has a **Setup** section listing the dependencies
 (Python 3, Pillow, poppler, ffmpeg) and the credentials it needs.
 
+The skill is machine-independent: it hard-codes no local paths. Work is written relative to the directory the
+agent runs in (`./<brand_code>/` per brand, `./reports/` for issue reports), and everything the scripts need at
+runtime ships inside the skill.
+
+## Configuration (all optional, all env vars)
+
+| Variable | Used for |
+|---|---|
+| `NEWCARS_ADMIN_USER` / `NEWCARS_ADMIN_PASS` | staging admin login, instead of `get_jwt.py --user/--password` |
+| `NEWCARS_SWAGGER` | full path to the catalog service's `swaggerv2.json` |
+| `NEWCARS_DOCS` | directory holding `swaggerv2.json`, `uploader-guide.md`, `content-upload-guide.md`, the brand-import checklist |
+
+The API contract is not redistributed here. `scripts/api_contract.py` looks for it at `$NEWCARS_SWAGGER`, then
+`$NEWCARS_DOCS/swaggerv2.json`, then `./swaggerv2.json` and `./docs/swaggerv2.json`, and tells you how to point
+it at your copy if it finds none — get the spec from the team that owns the service rather than guessing at
+endpoints.
+
 ## Layout
 
 | Path | Purpose |
@@ -35,7 +52,7 @@ user-level skills folder) and invoke it by name. `SKILL.md` has a **Setup** sect
 | `references/api-and-gotchas.md` | Catalog API, auth, and every gotcha hit in real runs |
 | `references/qa-and-reporting.md` | Staging QA, how to tell a data bug from a frontend bug, report format |
 | `references/brand-notes.md` | Per-brand source notes (Mitsubishi, Genesis, Changan, Honda) — append after each run |
-| `scripts/` | get_jwt · upload_media · import_catalog · coverage_report · price_audit · verify_staging · page_state · media_screen |
+| `scripts/` | get_jwt · upload_media · import_catalog · coverage_report · price_audit · verify_staging · page_state · media_screen · api_contract |
 | `reports/` | Issue reports filed with the frontend and backend teams |
 
 ## The two gates

@@ -2,7 +2,8 @@
 """Log in to the staging admin console and cache the JWT in <workdir>/.jwt (8h TTL).
 
 Credentials: --user/--password, or env NEWCARS_ADMIN_USER / NEWCARS_ADMIN_PASS.
-The staging credentials are documented in /Users/joe/new_cars/docs/uploader-guide.md (Step 1).
+Credentials come from --user/--password or the env vars; the staging pair is documented in the project's
+uploader guide ($NEWCARS_DOCS/uploader-guide.md, Step 1).
 The same token works for the presigned uploader AND /v1/admin/import/* (header `admin-console-token`).
 """
 import argparse, os, sys
