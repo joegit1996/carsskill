@@ -1,0 +1,8 @@
+{
+  "skill_name": "newcars-brand-enrichment",
+  "evals": [
+    {"id": 1, "prompt": "Dry run please: enrich Mitsubishi on New Cars staging but only the L200 pickup for now, using the Kuwait dealer site (mitsubishi-motors.com.kw). Use kw- test codes (brand kw-mitsubishi-l200test so it doesn't clash with our existing kw-mitsubishi). Don't upload or post anything to staging - I just want the content ready to import and a coverage report.", "expected_output": "content.json for 1 model with all official L200 grades, bilingual EN/AR, screened local media, highlights with pickup-appropriate slot wording, price-on-request handled, coverage report with justified gaps, dry-run payloads.", "files": []},
+    {"id": 2, "prompt": "can you prep Changan for the new cars catalog? just the CS35 Plus model for this test, Kuwait market (dealer site changankuwait.com). use kw- codes. dry run only - nothing gets uploaded or posted, give me the import-ready files + how complete it is", "expected_output": "Model + trims from changankuwait.com with prices, specs from official sources, AR content, media screened, coverage report and payloads; no staging writes.", "files": []},
+    {"id": 3, "prompt": "Test enrichment for Genesis GV70 in Kuwait (genesis.com/kw). Codes should be kw- prefixed (kw-genesis). Do not post to staging or use the uploader, this is a dry run. I need to see coverage percentages for the brand, model and trims and what's missing and why.", "expected_output": "Brand + GV70 model/trims content with coverage percentages per level, list of justified gaps, dry-run payloads; no staging writes.", "files": []}
+  ]
+}
