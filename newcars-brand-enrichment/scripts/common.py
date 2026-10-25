@@ -1,10 +1,28 @@
 """Shared helpers for the newcars-brand-enrichment scripts (stdlib only)."""
 import json, os, re, time, urllib.request, urllib.error
 
-API = "https://staging-services.q84sale.com/api/v1/new-cars-catalog"
-UPLOADER = "https://staging-services.q84sale.com/api/v1/presigned-uploader"
-LOGIN = "https://staging-admin-console.4sale.work/api/auth/login"
-STAGING_HOSTS = ("https://staging-raw-images.q84sale.com/", "https://staging-media.q84sale.com/")
+# Environment. NEWCARS_ENV=staging (default) | prod, or override any host individually.
+# Production differs only by dropping the "staging-" prefix, but it is the live consumer site:
+# every write under NEWCARS_ENV=prod needs the user's explicit go-ahead for that specific change.
+ENV = os.environ.get("NEWCARS_ENV", "staging").strip().lower()
+if ENV in ("prod", "production", "live"):
+    ENV, _P = "prod", ""
+elif ENV in ("staging", "stg", "test"):
+    ENV, _P = "staging", "staging-"
+else:
+    raise SystemExit(f"NEWCARS_ENV must be 'staging' or 'prod', got {ENV!r}")
+
+API = os.environ.get("NEWCARS_API_BASE") or f"https://{_P}services.q84sale.com/api/v1/new-cars-catalog"
+UPLOADER = os.environ.get("NEWCARS_UPLOADER") or f"https://{_P}services.q84sale.com/api/v1/presigned-uploader"
+LOGIN = os.environ.get("NEWCARS_LOGIN") or f"https://{_P}admin-console.4sale.work/api/auth/login"
+# Media refs count as "ours" only on this environment's own CDN — a staging URL in a prod import
+# (or the reverse) means the media was never re-uploaded for this environment.
+HOSTED_HOSTS = (f"https://{_P}raw-images.q84sale.com/", f"https://{_P}media.q84sale.com/")
+STAGING_HOSTS = HOSTED_HOSTS  # legacy alias
+
+
+def env_banner():
+    return f"[{ENV}] {API}"
 ARABIC = re.compile(r"[؀-ۿ]")
 BANNED_SOURCE = re.compile(r"wikipedia\.org|wikimedia\.org", re.I)
 
@@ -74,7 +92,7 @@ def read_jwt(workdir):
 
 
 def is_hosted(ref):
-    return isinstance(ref, str) and ref.startswith(STAGING_HOSTS)
+    return isinstance(ref, str) and ref.startswith(HOSTED_HOSTS)
 
 
 BRAND_MEDIA_KEYS = ["logo", "logo_dark", "hero_video", "hero_image", "featured_image", "banner", "heritage_image", "innovation_image"]

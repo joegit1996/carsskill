@@ -10,6 +10,8 @@ attribute values, that dealer fields existed on the brand. The swagger answers a
 swagger and reality disagree (it happens — see the attribute-values row below), trust the live API and report the
 mismatch.
 
+- Environment: `NEWCARS_ENV=staging` (default) or `prod` picks the hosts; production is the live
+  consumer site, so every write there needs the user's go-ahead for that specific change.
 - Catalog API: `https://staging-services.q84sale.com/api/v1/new-cars-catalog` (contract: the project's
   `swaggerv2.json`, see above). Public reads need header `Application-Source: q84sale`.
 - Admin writes: `/v1/admin/import/*` with headers `admin-console-token: <JWT>` + `Application-Source: q84sale`.
@@ -36,6 +38,8 @@ brands → dealers → models → trims → attribute-values → trim-hero-stats
 | `/browse` is cached for minutes | verify via `/v1/public/models/<id>` (verify_staging.py does) |
 | Staging FE returns occasional 504 | retry after a few seconds |
 | trim-hero-stats `title_ar` | real Arabic is accepted now (the old latin1 limit is fixed) |
+| **A soft-deleted code is burned** | `DELETE /v1/admin/trims/{id}` leaves `variant_code` in the unique index, so re-importing that code returns `failed: 1` with a raw `Error 1062 (23000): Duplicate entry`. **Delete-then-recreate does not work.** To reuse a code: `PATCH` the old row's `variant_code`/`slug` to `<code>-legacy-YYYYMM`, delete it, then import the original code — verified on production 2026-10-25. Assume the same applies to `DELETE /v1/admin/brands/{id}`: deleting a brand to re-import it under the same code can be **unrecoverable** (brand + every model + every trim code burned at once). Replace a brand by upserting over it, never by deleting it. |
+| **The uploader and the catalog API trust different tokens** | On production (2026-10-25) an `admin-console.4sale.work` token was accepted by `GET /v1/admin/attributes` (200) and rejected by the presigned uploader (`401 Invalid admin-console-token`) under every header variant. Smoke-test ONE file through the uploader before researching or authoring anything that depends on hosting media in that environment. |
 | **`/import/attribute-values` does NOT upsert** (despite its swagger description) | re-posting the same `(owner_type, owner_code, attr_code)` **adds another row**, even with an identical value, so a trim ends up showing a spec twice in `trim.attributes[]` (`trim.specs` keeps only the latest). **Get a trim's attributes right the first time.** If you must change one, expect a duplicate and say so in the run summary. Reported 2026-10-13 (see `reports/` in this skill). |
 | No way to replace or delete an attribute value | `PATCH /v1/admin/trims/{id}` has no attributes field (top-level trim fields only); `POST /v1/admin/models/{id}/attributes` is model-scoped; the undocumented `POST /v1/admin/trims/{id}/attributes` returns `{"status":"set"}` but **also appends**. The only clean-up is deleting and re-creating the trim — which also drops its equipment and hero stats, so ask the user first. |
 | `/import/trims` upserts correctly | re-importing trims returns `updated: N` — safe to re-run, unlike attribute values |
