@@ -8,12 +8,33 @@ Identical bytes are uploaded once (md5 de-dupe), so re-runs and duplicates cost 
 
 Usage: upload_media.py --workdir <dir> [--dry]
 """
+import subprocess
 import argparse, hashlib, json, mimetypes, os, sys, time
 sys.path.insert(0, os.path.dirname(__file__))
 from common import UPLOADER, http, iter_media, is_hosted, load_json, read_jwt, save_json
 
 MIME = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
         ".svg": "image/svg+xml", ".mp4": "video/mp4", ".webm": "video/webm", ".gif": "image/gif"}
+
+
+# urllib's PUT breaks on multi-megabyte bodies ("[Errno 32] Broken pipe" partway through the send, seen on a
+# 19.6 MB mp4 that curl uploaded fine), so hand big files - and anything urllib chokes on - to curl.
+CURL_OVER = 4 * 1024 * 1024
+
+
+def put_bytes(upload_url, path, body, mime):
+    """PUT the bytes to the presigned URL. Returns the HTTP status."""
+    if len(body) < CURL_OVER:
+        try:
+            st, _ = http("PUT", upload_url, body, {"Content-Type": mime}, raw=True, timeout=300)
+            return st
+        except Exception as e:
+            print(f"    urllib PUT failed ({type(e).__name__}), retrying with curl: {path}")
+    out = subprocess.run(["curl", "-s", "--http1.1", "-m", "900", "-X", "PUT",
+                          "-H", f"Content-Type: {mime}", "--data-binary", "@" + path,
+                          upload_url, "-o", os.devnull, "-w", "%{http_code}"],
+                         capture_output=True, text=True)
+    return int((out.stdout or "0").strip() or 0)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--workdir", required=True)
@@ -67,10 +88,16 @@ for r in local:
     if st != 200:
         print(f"  ! presign {st} {str(res)[:150]} for {r}"); failed += 1; continue
     item = res["results"][0]
-    pst, _ = http("PUT", item["uploadUrl"], body, {"Content-Type": mime}, raw=True, timeout=300)
     url = item["publicUrls"]["url"]
+    try:
+        pst = put_bytes(item["uploadUrl"], r, body, mime)
+    except Exception as e:                      # never let one file kill the run
+        print(f"  ! PUT raised for {r}: {type(e).__name__} {e}"); failed += 1; continue
     time.sleep(1.5)
-    hst, _ = http("HEAD", url, raw=True)
+    try:
+        hst, _ = http("HEAD", url, raw=True)
+    except Exception as e:
+        print(f"  ! HEAD raised for {r}: {type(e).__name__}"); hst = 0
     if pst not in (200, 204) or hst != 200:
         print(f"  ! PUT {pst} / HEAD {hst} for {r}"); failed += 1; continue
     man["by_path"][r] = url

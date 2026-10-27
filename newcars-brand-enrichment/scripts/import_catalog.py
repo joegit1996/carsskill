@@ -230,7 +230,10 @@ if "equipment" in only:
 if "highlights" in only and hl_rows:
     print("8. model-highlights"); post("/v1/admin/import/model-highlights", hl_rows, "08-highlights")
 
-save_json(os.path.join(W, "stored_codes.json"),
-          {"brand": {"code": brand_code, "id": brand_id},
-           "models": {s: {"code": c, "id": i} for s, (c, i) in stored_models.items()}})
+# A dry run resolves no ids, so writing them would replace real stored ids with nulls and break
+# verify_staging.py. Only persist them when we actually posted.
+if not a.dry:
+    save_json(os.path.join(W, "stored_codes.json"),
+              {"brand": {"code": brand_code, "id": brand_id},
+               "models": {s: {"code": c, "id": i} for s, (c, i) in stored_models.items()}})
 print("DONE" + (" (dry run - nothing posted)" if a.dry else ""))

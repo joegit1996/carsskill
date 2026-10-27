@@ -18,6 +18,7 @@ LOGIN = os.environ.get("NEWCARS_LOGIN") or f"https://{_P}admin-console.4sale.wor
 # Media refs count as "ours" only on this environment's own CDN — a staging URL in a prod import
 # (or the reverse) means the media was never re-uploaded for this environment.
 HOSTED_HOSTS = (f"https://{_P}raw-images.q84sale.com/", f"https://{_P}media.q84sale.com/")
+SITE = os.environ.get("NEWCARS_SITE") or f"https://{_P}newcars.q84sale.com"
 STAGING_HOSTS = HOSTED_HOSTS  # legacy alias
 
 
